@@ -113,6 +113,9 @@ struct vkd3d_vulkan_info
     bool KHR_maintenance3;
     bool KHR_push_descriptor;
     bool KHR_timeline_semaphore;
+    bool KHR_ray_tracing;
+    bool KHR_deferred_host_operations;
+    bool KHR_pipeline_library;
     /* EXT device extensions */
     bool EXT_conditional_rendering;
     bool EXT_debug_marker;
@@ -1485,6 +1488,7 @@ struct vkd3d_physical_device_info
     VkPhysicalDeviceShaderCorePropertiesAMD shader_core_properties;
     VkPhysicalDeviceShaderCoreProperties2AMD shader_core_properties2;
     VkPhysicalDeviceShaderSMBuiltinsPropertiesNV shader_sm_builtins_properties;
+    VkPhysicalDeviceRayTracingPropertiesKHR ray_tracing_properties;
 
     VkPhysicalDeviceProperties2KHR properties2;
 
@@ -1499,6 +1503,7 @@ struct vkd3d_physical_device_info
     VkPhysicalDeviceTransformFeedbackFeaturesEXT xfb_features;
     VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT vertex_divisor_features;
     VkPhysicalDeviceTimelineSemaphoreFeaturesKHR timeline_semaphore_features;
+    VkPhysicalDeviceRayTracingFeaturesKHR ray_tracing_features;
 
     VkPhysicalDeviceFeatures2 features2;
 };
