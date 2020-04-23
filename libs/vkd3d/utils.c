@@ -577,7 +577,8 @@ bool is_write_resource_state(D3D12_RESOURCE_STATES state)
             | D3D12_RESOURCE_STATE_DEPTH_WRITE
             | D3D12_RESOURCE_STATE_STREAM_OUT
             | D3D12_RESOURCE_STATE_COPY_DEST
-            | D3D12_RESOURCE_STATE_RESOLVE_DEST);
+            | D3D12_RESOURCE_STATE_RESOLVE_DEST
+            | D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE);
 }
 
 static bool is_power_of_two(unsigned int x)
@@ -605,7 +606,8 @@ bool is_valid_resource_state(D3D12_RESOURCE_STATES state)
             D3D12_RESOURCE_STATE_RESOLVE_SOURCE |
             D3D12_RESOURCE_STATE_GENERIC_READ |
             D3D12_RESOURCE_STATE_PRESENT |
-            D3D12_RESOURCE_STATE_PREDICATION;
+            D3D12_RESOURCE_STATE_PREDICATION |
+            D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
 
     if (state & ~valid_states)
     {
