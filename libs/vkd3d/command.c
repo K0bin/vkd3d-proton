@@ -1815,9 +1815,26 @@ static bool vk_barrier_parameters_from_d3d12_resource_state(struct d3d12_device 
         case D3D12_RESOURCE_STATE_UNORDERED_ACCESS:
             *access_mask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
             *stage_flags = queue_shader_stages;
+
+            /* Unordered access state is also used by RT to synchronize acceleration structures. */
+            if ((!resource || d3d12_resource_is_buffer(resource)) &&
+                (queue_shader_stages & VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT) &&
+                device->d3d12_caps.options5.RaytracingTier >= D3D12_RAYTRACING_TIER_1_0)
+            {
+                *access_mask |= VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+                *stage_flags |= VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+            }
+
             if (image_layout)
                 *image_layout = VK_IMAGE_LAYOUT_GENERAL;
             return true;
+
+        case D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE:
+            *access_mask = VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+            *stage_flags = VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+            if (image_layout)
+                *image_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+            break;
 
         case D3D12_RESOURCE_STATE_DEPTH_WRITE:
             *access_mask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT
