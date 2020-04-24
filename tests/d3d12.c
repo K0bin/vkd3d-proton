@@ -40656,6 +40656,7 @@ static void test_raytracing(void)
     ID3D12Resource *scratch_buffer_bottom;
     ID3D12Resource *scratch_buffer_top;
     ID3D12Resource *transform_buffer;
+    ID3D12StateObject *rt_pso = NULL;
     ID3D12Resource *instance_buffer;
     unsigned int i, descriptor_size;
     ID3D12RootSignature *global_rs;
@@ -40665,7 +40666,6 @@ static void test_raytracing(void)
     struct resource_readback rb;
     ID3D12Resource *ray_colors;
     ID3D12CommandQueue *queue;
-    ID3D12StateObject *rt_pso;
     ID3D12Device5 *device5;
     ID3D12Resource *vbo;
     ID3D12Resource *sbt;
@@ -41170,6 +41170,7 @@ static void test_raytracing(void)
     }
 
     /* Build SBT (Shader Binding Table) */
+    if (rt_pso)
     {
         ID3D12StateObjectProperties *props;
         /* Why this is a separate interface, we will never know ... */
