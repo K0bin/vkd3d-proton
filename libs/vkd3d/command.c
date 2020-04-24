@@ -4117,6 +4117,10 @@ static void STDMETHODCALLTYPE d3d12_command_list_ResourceBarrier(d3d12_command_l
     struct d3d12_command_list *list = impl_from_ID3D12GraphicsCommandList(iface);
     const struct vkd3d_vk_device_procs *vk_procs = &list->device->vk_procs;
     bool have_aliasing_barriers = false, have_split_barriers = false;
+    VkPipelineStageFlags global_src_stages = 0;
+    VkPipelineStageFlags global_dst_stages = 0;
+    VkAccessFlags global_src_access = 0;
+    VkAccessFlags global_dst_access = 0;
     bool *multiplanar_handled = NULL;
     unsigned int i;
 
@@ -4252,34 +4256,14 @@ static void STDMETHODCALLTYPE d3d12_command_list_ResourceBarrier(d3d12_command_l
         if (resource)
             d3d12_command_list_track_resource_usage(list, resource);
 
-        if (!resource)
+        if (!resource || d3d12_resource_is_buffer(resource))
         {
-            VkMemoryBarrier vk_barrier;
-
-            vk_barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-            vk_barrier.pNext = NULL;
-            vk_barrier.srcAccessMask = src_access_mask;
-            vk_barrier.dstAccessMask = dst_access_mask;
-
-            VK_CALL(vkCmdPipelineBarrier(list->vk_command_buffer, src_stage_mask, dst_stage_mask, 0,
-                    1, &vk_barrier, 0, NULL, 0, NULL));
-        }
-        else if (d3d12_resource_is_buffer(resource))
-        {
-            VkBufferMemoryBarrier vk_barrier;
-
-            vk_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-            vk_barrier.pNext = NULL;
-            vk_barrier.srcAccessMask = src_access_mask;
-            vk_barrier.dstAccessMask = dst_access_mask;
-            vk_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            vk_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            vk_barrier.buffer = resource->u.vk_buffer;
-            vk_barrier.offset = resource->heap_offset;
-            vk_barrier.size = resource->desc.Width;
-
-            VK_CALL(vkCmdPipelineBarrier(list->vk_command_buffer, src_stage_mask, dst_stage_mask, 0,
-                    0, NULL, 1, &vk_barrier, 0, NULL));
+            /* Batch global and buffer barriers. There is little reason to use buffer barriers in general
+             * and buffer barriers might apply to acceleration structures which are side-channel objects. */
+            global_src_stages |= src_stage_mask;
+            global_dst_stages |= dst_stage_mask;
+            global_src_access |= src_access_mask;
+            global_dst_access |= dst_access_mask;
         }
         else
         {
@@ -4328,6 +4312,19 @@ static void STDMETHODCALLTYPE d3d12_command_list_ResourceBarrier(d3d12_command_l
             VK_CALL(vkCmdPipelineBarrier(list->vk_command_buffer, src_stage_mask, dst_stage_mask, 0,
                     0, NULL, 0, NULL, 1, &vk_barrier));
         }
+    }
+
+    if (global_src_stages != 0 && global_dst_access != 0)
+    {
+        VkMemoryBarrier vk_barrier;
+
+        vk_barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+        vk_barrier.pNext = NULL;
+        vk_barrier.srcAccessMask = global_src_access;
+        vk_barrier.dstAccessMask = global_dst_access;
+
+        VK_CALL(vkCmdPipelineBarrier(list->vk_command_buffer, global_src_stages, global_dst_stages, 0,
+                                     1, &vk_barrier, 0, NULL, 0, NULL));
     }
 
     vkd3d_free(multiplanar_handled);
