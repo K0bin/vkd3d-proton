@@ -1493,8 +1493,12 @@ static VkResult d3d12_swapchain_queue_present(struct d3d12_swapchain *swapchain,
 
     if (swapchain->vk_image_index == INVALID_VK_IMAGE_INDEX)
     {
-        if ((vr = d3d12_swapchain_acquire_next_vulkan_image(swapchain)) < 0)
+        if ((vr = d3d12_swapchain_acquire_next_vulkan_image(swapchain)) < 0) {
+        void *data;
+        swapchain->command_queue->device->debug_buffer->lpVtbl->Map(swapchain->command_queue->device->debug_buffer, 0, 0, &data);
+        ERR("bla %d\n", *((UINT*)data));
             return vr;
+        }
     }
 
     assert(swapchain->vk_image_index < swapchain->buffer_count);
@@ -1518,12 +1522,19 @@ static VkResult d3d12_swapchain_queue_present(struct d3d12_swapchain *swapchain,
         if ((vr = vk_procs->vkResetCommandBuffer(vk_cmd_buffer, 0)) < 0)
         {
             ERR("Failed to reset command buffer, vr %d.\n", vr);
+        void *data;
+        swapchain->command_queue->device->debug_buffer->lpVtbl->Map(swapchain->command_queue->device->debug_buffer, 0, 0, &data);
+        ERR("bla %d\n", *((UINT*)data));
             return vr;
         }
 
         if ((vr = d3d12_swapchain_record_swapchain_blit(swapchain,
-                vk_cmd_buffer, vk_dst_image, vk_src_image)) < 0 )
+                vk_cmd_buffer, vk_dst_image, vk_src_image)) < 0 ) {
+        void *data;
+        swapchain->command_queue->device->debug_buffer->lpVtbl->Map(swapchain->command_queue->device->debug_buffer, 0, 0, &data);
+        ERR("bla %d\n", *((UINT*)data));
             return vr;
+                }
 
         submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submit_info.pNext = NULL;
@@ -1538,6 +1549,9 @@ static VkResult d3d12_swapchain_queue_present(struct d3d12_swapchain *swapchain,
         if ((vr = vk_procs->vkQueueSubmit(vk_queue, 1, &submit_info, VK_NULL_HANDLE)) < 0)
         {
             ERR("Failed to blit swapchain buffer, vr %d.\n", vr);
+        void *data;
+        swapchain->command_queue->device->debug_buffer->lpVtbl->Map(swapchain->command_queue->device->debug_buffer, 0, 0, &data);
+        ERR("bla %d\n", *((UINT*)data));
             return vr;
         }
 
@@ -1573,12 +1587,19 @@ static HRESULT d3d12_swapchain_present(struct d3d12_swapchain *swapchain,
         return S_OK;
     }
 
-    if (FAILED(hr = d3d12_swapchain_set_sync_interval(swapchain, sync_interval)))
+    if (FAILED(hr = d3d12_swapchain_set_sync_interval(swapchain, sync_interval))) {
+        void *data;
+        swapchain->command_queue->device->debug_buffer->lpVtbl->Map(swapchain->command_queue->device->debug_buffer, 0, 0, &data);
+        ERR("bla %d\n", *((UINT*)data));
         return hr;
+    }
 
     if (!(vk_queue = vkd3d_acquire_vk_queue(d3d12_swapchain_queue_iface(swapchain))))
     {
         ERR("Failed to acquire Vulkan queue.\n");
+        void *data;
+        swapchain->command_queue->device->debug_buffer->lpVtbl->Map(swapchain->command_queue->device->debug_buffer, 0, 0, &data);
+        ERR("bla %d\n", *((UINT*)data));
         return E_FAIL;
     }
 
@@ -1596,17 +1617,28 @@ static HRESULT d3d12_swapchain_present(struct d3d12_swapchain *swapchain,
         TRACE("Recreating Vulkan swapchain.\n");
 
         d3d12_swapchain_destroy_buffers(swapchain, FALSE);
-        if (FAILED(hr = d3d12_swapchain_recreate_vulkan_swapchain(swapchain)))
+        if (FAILED(hr = d3d12_swapchain_recreate_vulkan_swapchain(swapchain))) {
+        void *data;
+        swapchain->command_queue->device->debug_buffer->lpVtbl->Map(swapchain->command_queue->device->debug_buffer, 0, 0, &data);
+        ERR("bla %d\n", *((UINT*)data));
             return hr;
+        }
 
         if (!(vk_queue = vkd3d_acquire_vk_queue(d3d12_swapchain_queue_iface(swapchain))))
         {
             ERR("Failed to acquire Vulkan queue.\n");
+        void *data;
+        swapchain->command_queue->device->debug_buffer->lpVtbl->Map(swapchain->command_queue->device->debug_buffer, 0, 0, &data);
+        ERR("bla %d\n", *((UINT*)data));
             return E_FAIL;
         }
 
-        if ((vr = d3d12_swapchain_queue_present(swapchain, vk_queue)) < 0)
+        if ((vr = d3d12_swapchain_queue_present(swapchain, vk_queue)) < 0) {
+        void *data;
+        swapchain->command_queue->device->debug_buffer->lpVtbl->Map(swapchain->command_queue->device->debug_buffer, 0, 0, &data);
+        ERR("bla %d\n", *((UINT*)data));
             ERR("Failed to present after recreating swapchain, vr %d.\n", vr);
+        }
     }
 
     vkd3d_release_vk_queue(d3d12_swapchain_queue_iface(swapchain));
@@ -1614,6 +1646,9 @@ static HRESULT d3d12_swapchain_present(struct d3d12_swapchain *swapchain,
     if (vr < 0)
     {
         ERR("Failed to queue present, vr %d.\n", vr);
+        void *data;
+        swapchain->command_queue->device->debug_buffer->lpVtbl->Map(swapchain->command_queue->device->debug_buffer, 0, 0, &data);
+        ERR("bla %d\n", *((UINT*)data));
         return hresult_from_vk_result(vr);
     }
 

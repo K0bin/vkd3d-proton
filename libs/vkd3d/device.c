@@ -4779,6 +4779,30 @@ static HRESULT d3d12_device_init(struct d3d12_device *device,
         IUnknown_AddRef(device->parent);
 
     d3d12_device_caps_init(device);
+
+    D3D12_HEAP_PROPERTIES heap_props;
+    heap_props.Type = D3D12_HEAP_TYPE_READBACK;
+    heap_props.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_WRITE_BACK;
+    heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_L0;
+    heap_props.CreationNodeMask = 0;
+    heap_props.VisibleNodeMask = 0;
+
+    D3D12_RESOURCE_DESC resource_desc;
+    resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+    resource_desc.Alignment = 65536;
+    resource_desc.Width = 128;
+    resource_desc.Height = 1;
+    resource_desc.DepthOrArraySize = 1;
+    resource_desc.Format = DXGI_FORMAT_UNKNOWN;
+    resource_desc.MipLevels = 1;
+    resource_desc.Flags = 0;
+    resource_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+    resource_desc.SampleDesc.Count = 1;
+    resource_desc.SampleDesc.Quality = 0;
+    d3d12_device_CreateCommittedResource(
+      &device->ID3D12Device_iface, &heap_props, D3D12_HEAP_FLAG_NONE, &resource_desc,
+      D3D12_RESOURCE_STATE_COPY_DEST, 0, &IID_ID3D12Resource, &device->debug_buffer);
+
     return S_OK;
 
 out_cleanup_view_map:

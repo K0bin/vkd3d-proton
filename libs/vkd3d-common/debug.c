@@ -112,7 +112,7 @@ void vkd3d_dbg_printf(enum vkd3d_dbg_channel channel, enum vkd3d_dbg_level level
     if (vkd3d_dbg_get_level(channel) < level)
         return;
 
-    log_file = vkd3d_log_file ? vkd3d_log_file : stderr;
+    log_file = vkd3d_log_file ? vkd3d_log_file : stdout;
     assert(level < ARRAY_SIZE(debug_level_names));
 
     va_start(args, fmt);
