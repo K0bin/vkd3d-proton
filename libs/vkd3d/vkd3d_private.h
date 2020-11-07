@@ -1942,6 +1942,7 @@ struct d3d12_device
     struct vkd3d_view_map sampler_map;
     struct vkd3d_sampler_state sampler_state;
     struct vkd3d_shader_debug_ring debug_ring;
+    struct ID3D12Resource *debug_buffer;
 };
 
 HRESULT d3d12_device_create(struct vkd3d_instance *instance,

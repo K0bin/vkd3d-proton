@@ -2852,6 +2852,12 @@ static HRESULT STDMETHODCALLTYPE d3d12_command_list_Reset(d3d12_command_list_ifa
     TRACE("iface %p, allocator %p, initial_pipeline_state %p.\n",
             iface, allocator, initial_pipeline_state);
 
+    D3D12_WRITEBUFFERIMMEDIATE_PARAMETER write_buffer;
+    write_buffer.Value = 15;
+    write_buffer.Dest = list->device->debug_buffer->lpVtbl->GetGPUVirtualAddress(list->device->debug_buffer);
+    D3D12_WRITEBUFFERIMMEDIATE_MODE mode = D3D12_WRITEBUFFERIMMEDIATE_MODE_DEFAULT;
+    iface->lpVtbl->WriteBufferImmediate(iface, 1, &write_buffer, &mode);
+
     if (!allocator_impl)
     {
         WARN("Command allocator is NULL.\n");
@@ -3596,6 +3602,12 @@ static void STDMETHODCALLTYPE d3d12_command_list_DrawInstanced(d3d12_command_lis
             iface, vertex_count_per_instance, instance_count,
             start_vertex_location, start_instance_location);
 
+    D3D12_WRITEBUFFERIMMEDIATE_PARAMETER write_buffer;
+    write_buffer.Value = 1;
+    write_buffer.Dest = list->device->debug_buffer->lpVtbl->GetGPUVirtualAddress(list->device->debug_buffer);
+    D3D12_WRITEBUFFERIMMEDIATE_MODE mode = D3D12_WRITEBUFFERIMMEDIATE_MODE_DEFAULT;
+    iface->lpVtbl->WriteBufferImmediate(iface, 1, &write_buffer, &mode);
+
     vk_procs = &list->device->vk_procs;
 
     if (!d3d12_command_list_begin_render_pass(list))
@@ -3633,6 +3645,12 @@ static void STDMETHODCALLTYPE d3d12_command_list_DrawIndexedInstanced(d3d12_comm
         return;
     }
 
+    D3D12_WRITEBUFFERIMMEDIATE_PARAMETER write_buffer;
+    write_buffer.Value = 2;
+    write_buffer.Dest = list->device->debug_buffer->lpVtbl->GetGPUVirtualAddress(list->device->debug_buffer);
+    D3D12_WRITEBUFFERIMMEDIATE_MODE mode = D3D12_WRITEBUFFERIMMEDIATE_MODE_DEFAULT;
+    iface->lpVtbl->WriteBufferImmediate(iface, 1, &write_buffer, &mode);
+
     if (!d3d12_command_list_begin_render_pass(list))
     {
         WARN("Failed to begin render pass, ignoring draw call.\n");
@@ -3654,6 +3672,12 @@ static void STDMETHODCALLTYPE d3d12_command_list_Dispatch(d3d12_command_list_ifa
     const struct vkd3d_vk_device_procs *vk_procs;
 
     TRACE("iface %p, x %u, y %u, z %u.\n", iface, x, y, z);
+
+    D3D12_WRITEBUFFERIMMEDIATE_PARAMETER write_buffer;
+    write_buffer.Value = 3;
+    write_buffer.Dest = list->device->debug_buffer->lpVtbl->GetGPUVirtualAddress(list->device->debug_buffer);
+    D3D12_WRITEBUFFERIMMEDIATE_MODE mode = D3D12_WRITEBUFFERIMMEDIATE_MODE_DEFAULT;
+    iface->lpVtbl->WriteBufferImmediate(iface, 1, &write_buffer, &mode);
 
     if (!d3d12_command_list_update_compute_state(list))
     {
@@ -3677,6 +3701,12 @@ static void STDMETHODCALLTYPE d3d12_command_list_CopyBufferRegion(d3d12_command_
     TRACE("iface %p, dst_resource %p, dst_offset %#"PRIx64", src_resource %p, "
             "src_offset %#"PRIx64", byte_count %#"PRIx64".\n",
             iface, dst, dst_offset, src, src_offset, byte_count);
+
+    D3D12_WRITEBUFFERIMMEDIATE_PARAMETER write_buffer;
+    write_buffer.Value = 4;
+    write_buffer.Dest = list->device->debug_buffer->lpVtbl->GetGPUVirtualAddress(list->device->debug_buffer);
+    D3D12_WRITEBUFFERIMMEDIATE_MODE mode = D3D12_WRITEBUFFERIMMEDIATE_MODE_DEFAULT;
+    iface->lpVtbl->WriteBufferImmediate(iface, 1, &write_buffer, &mode);
 
     vk_procs = &list->device->vk_procs;
 
@@ -4119,6 +4149,12 @@ static void STDMETHODCALLTYPE d3d12_command_list_CopyTextureRegion(d3d12_command
     TRACE("iface %p, dst %p, dst_x %u, dst_y %u, dst_z %u, src %p, src_box %p.\n",
             iface, dst, dst_x, dst_y, dst_z, src, src_box);
 
+    D3D12_WRITEBUFFERIMMEDIATE_PARAMETER write_buffer;
+    write_buffer.Value = 5;
+    write_buffer.Dest = list->device->debug_buffer->lpVtbl->GetGPUVirtualAddress(list->device->debug_buffer);
+    D3D12_WRITEBUFFERIMMEDIATE_MODE mode = D3D12_WRITEBUFFERIMMEDIATE_MODE_DEFAULT;
+    iface->lpVtbl->WriteBufferImmediate(iface, 1, &write_buffer, &mode);
+
     if (src_box && !validate_d3d12_box(src_box))
     {
         WARN("Empty box %s.\n", debug_d3d12_box(src_box));
@@ -4283,6 +4319,12 @@ static void STDMETHODCALLTYPE d3d12_command_list_CopyResource(d3d12_command_list
 
     TRACE("iface %p, dst_resource %p, src_resource %p.\n", iface, dst, src);
 
+    D3D12_WRITEBUFFERIMMEDIATE_PARAMETER write_buffer;
+    write_buffer.Value = 6;
+    write_buffer.Dest = list->device->debug_buffer->lpVtbl->GetGPUVirtualAddress(list->device->debug_buffer);
+    D3D12_WRITEBUFFERIMMEDIATE_MODE mode = D3D12_WRITEBUFFERIMMEDIATE_MODE_DEFAULT;
+    iface->lpVtbl->WriteBufferImmediate(iface, 1, &write_buffer, &mode);
+
     vk_procs = &list->device->vk_procs;
 
     dst_resource = unsafe_impl_from_ID3D12Resource(dst);
@@ -4354,6 +4396,12 @@ static void STDMETHODCALLTYPE d3d12_command_list_CopyTiles(d3d12_command_list_if
             "buffer %p, buffer_offset %#"PRIx64", flags %#x.\n",
             iface, tiled_resource, region_coord, region_size,
             buffer, buffer_offset, flags);
+
+    D3D12_WRITEBUFFERIMMEDIATE_PARAMETER write_buffer;
+    write_buffer.Value = 7;
+    write_buffer.Dest = list->device->debug_buffer->lpVtbl->GetGPUVirtualAddress(list->device->debug_buffer);
+    D3D12_WRITEBUFFERIMMEDIATE_MODE mode = D3D12_WRITEBUFFERIMMEDIATE_MODE_DEFAULT;
+    iface->lpVtbl->WriteBufferImmediate(iface, 1, &write_buffer, &mode);
 
     d3d12_command_list_end_current_render_pass(list, true);
 
@@ -4476,6 +4524,12 @@ static void STDMETHODCALLTYPE d3d12_command_list_ResolveSubresource(d3d12_comman
 
     TRACE("iface %p, dst_resource %p, dst_sub_resource_idx %u, src_resource %p, src_sub_resource_idx %u, "
             "format %#x.\n", iface, dst, dst_sub_resource_idx, src, src_sub_resource_idx, format);
+
+    D3D12_WRITEBUFFERIMMEDIATE_PARAMETER write_buffer;
+    write_buffer.Value = 8;
+    write_buffer.Dest = list->device->debug_buffer->lpVtbl->GetGPUVirtualAddress(list->device->debug_buffer);
+    D3D12_WRITEBUFFERIMMEDIATE_MODE mode = D3D12_WRITEBUFFERIMMEDIATE_MODE_DEFAULT;
+    iface->lpVtbl->WriteBufferImmediate(iface, 1, &write_buffer, &mode);
 
     device = list->device;
     vk_procs = &device->vk_procs;
@@ -4785,6 +4839,12 @@ static void STDMETHODCALLTYPE d3d12_command_list_ResourceBarrier(d3d12_command_l
     unsigned int i;
 
     TRACE("iface %p, barrier_count %u, barriers %p.\n", iface, barrier_count, barriers);
+
+    D3D12_WRITEBUFFERIMMEDIATE_PARAMETER write_buffer;
+    write_buffer.Value = 9;
+    write_buffer.Dest = list->device->debug_buffer->lpVtbl->GetGPUVirtualAddress(list->device->debug_buffer);
+    D3D12_WRITEBUFFERIMMEDIATE_MODE mode = D3D12_WRITEBUFFERIMMEDIATE_MODE_DEFAULT;
+    iface->lpVtbl->WriteBufferImmediate(iface, 1, &write_buffer, &mode);
 
     d3d12_command_list_end_current_render_pass(list, false);
 
@@ -5627,6 +5687,12 @@ static void STDMETHODCALLTYPE d3d12_command_list_ClearDepthStencilView(d3d12_com
     TRACE("iface %p, dsv %#lx, flags %#x, depth %.8e, stencil 0x%02x, rect_count %u, rects %p.\n",
             iface, dsv.ptr, flags, depth, stencil, rect_count, rects);
 
+    D3D12_WRITEBUFFERIMMEDIATE_PARAMETER write_buffer;
+    write_buffer.Value = 15;
+    write_buffer.Dest = list->device->debug_buffer->lpVtbl->GetGPUVirtualAddress(list->device->debug_buffer);
+    D3D12_WRITEBUFFERIMMEDIATE_MODE mode = D3D12_WRITEBUFFERIMMEDIATE_MODE_DEFAULT;
+    iface->lpVtbl->WriteBufferImmediate(iface, 1, &write_buffer, &mode);
+
     d3d12_command_list_track_resource_usage(list, dsv_desc->resource);
 
     if (flags & D3D12_CLEAR_FLAG_DEPTH)
@@ -5656,6 +5722,12 @@ static void STDMETHODCALLTYPE d3d12_command_list_ClearRenderTargetView(d3d12_com
 
     TRACE("iface %p, rtv %#lx, color %p, rect_count %u, rects %p.\n",
             iface, rtv.ptr, color, rect_count, rects);
+
+    D3D12_WRITEBUFFERIMMEDIATE_PARAMETER write_buffer;
+    write_buffer.Value = 14;
+    write_buffer.Dest = list->device->debug_buffer->lpVtbl->GetGPUVirtualAddress(list->device->debug_buffer);
+    D3D12_WRITEBUFFERIMMEDIATE_MODE mode = D3D12_WRITEBUFFERIMMEDIATE_MODE_DEFAULT;
+    iface->lpVtbl->WriteBufferImmediate(iface, 1, &write_buffer, &mode);
 
     d3d12_command_list_track_resource_usage(list, rtv_desc->resource);
 
@@ -5906,6 +5978,12 @@ static void STDMETHODCALLTYPE d3d12_command_list_ClearUnorderedAccessViewUint(d3
     TRACE("iface %p, gpu_handle %#"PRIx64", cpu_handle %lx, resource %p, values %p, rect_count %u, rects %p.\n",
             iface, gpu_handle.ptr, cpu_handle.ptr, resource, values, rect_count, rects);
 
+    D3D12_WRITEBUFFERIMMEDIATE_PARAMETER write_buffer;
+    write_buffer.Value = 12;
+    write_buffer.Dest = list->device->debug_buffer->lpVtbl->GetGPUVirtualAddress(list->device->debug_buffer);
+    D3D12_WRITEBUFFERIMMEDIATE_MODE mode = D3D12_WRITEBUFFERIMMEDIATE_MODE_DEFAULT;
+    iface->lpVtbl->WriteBufferImmediate(iface, 1, &write_buffer, &mode);
+
     memcpy(color.uint32, values, sizeof(color.uint32));
 
     resource_impl = unsafe_impl_from_ID3D12Resource(resource);
@@ -5977,6 +6055,12 @@ static void STDMETHODCALLTYPE d3d12_command_list_ClearUnorderedAccessViewFloat(d
     TRACE("iface %p, gpu_handle %#"PRIx64", cpu_handle %lx, resource %p, values %p, rect_count %u, rects %p.\n",
             iface, gpu_handle.ptr, cpu_handle.ptr, resource, values, rect_count, rects);
 
+    D3D12_WRITEBUFFERIMMEDIATE_PARAMETER write_buffer;
+    write_buffer.Value = 11;
+    write_buffer.Dest = list->device->debug_buffer->lpVtbl->GetGPUVirtualAddress(list->device->debug_buffer);
+    D3D12_WRITEBUFFERIMMEDIATE_MODE mode = D3D12_WRITEBUFFERIMMEDIATE_MODE_DEFAULT;
+    iface->lpVtbl->WriteBufferImmediate(iface, 1, &write_buffer, &mode);
+
     memcpy(color.float32, values, sizeof(color.float32));
 
     resource_impl = unsafe_impl_from_ID3D12Resource(resource);
@@ -5998,6 +6082,12 @@ static void STDMETHODCALLTYPE d3d12_command_list_DiscardResource(d3d12_command_l
     bool full_discard;
 
     TRACE("iface %p, resource %p, region %p.\n", iface, resource, region);
+
+    D3D12_WRITEBUFFERIMMEDIATE_PARAMETER write_buffer;
+    write_buffer.Value = 16;
+    write_buffer.Dest = list->device->debug_buffer->lpVtbl->GetGPUVirtualAddress(list->device->debug_buffer);
+    D3D12_WRITEBUFFERIMMEDIATE_MODE mode = D3D12_WRITEBUFFERIMMEDIATE_MODE_DEFAULT;
+    iface->lpVtbl->WriteBufferImmediate(iface, 1, &write_buffer, &mode);
 
     /* This method is only supported on DIRECT and COMPUTE queues,
      * but we only implement it for render targets, so ignore it
@@ -6113,6 +6203,12 @@ static void STDMETHODCALLTYPE d3d12_command_list_EndQuery(d3d12_command_list_ifa
 
     TRACE("iface %p, heap %p, type %#x, index %u.\n", iface, heap, type, index);
 
+    D3D12_WRITEBUFFERIMMEDIATE_PARAMETER write_buffer;
+    write_buffer.Value = 17;
+    write_buffer.Dest = list->device->debug_buffer->lpVtbl->GetGPUVirtualAddress(list->device->debug_buffer);
+    D3D12_WRITEBUFFERIMMEDIATE_MODE mode = D3D12_WRITEBUFFERIMMEDIATE_MODE_DEFAULT;
+    iface->lpVtbl->WriteBufferImmediate(iface, 1, &write_buffer, &mode);
+
     vk_procs = &list->device->vk_procs;
 
     d3d12_command_list_end_current_render_pass(list, true);
@@ -6164,6 +6260,12 @@ static void STDMETHODCALLTYPE d3d12_command_list_ResolveQueryData(d3d12_command_
             "dst_buffer %p, aligned_dst_buffer_offset %#"PRIx64".\n",
             iface, heap, type, start_index, query_count,
             dst_buffer, aligned_dst_buffer_offset);
+
+    D3D12_WRITEBUFFERIMMEDIATE_PARAMETER write_buffer;
+    write_buffer.Value = 18;
+    write_buffer.Dest = list->device->debug_buffer->lpVtbl->GetGPUVirtualAddress(list->device->debug_buffer);
+    D3D12_WRITEBUFFERIMMEDIATE_MODE mode = D3D12_WRITEBUFFERIMMEDIATE_MODE_DEFAULT;
+    iface->lpVtbl->WriteBufferImmediate(iface, 1, &write_buffer, &mode);
 
     vk_procs = &list->device->vk_procs;
 
@@ -6434,6 +6536,12 @@ static void STDMETHODCALLTYPE d3d12_command_list_ExecuteIndirect(d3d12_command_l
             "arg_buffer_offset %#"PRIx64", count_buffer %p, count_buffer_offset %#"PRIx64".\n",
             iface, command_signature, max_command_count, arg_buffer, arg_buffer_offset,
             count_buffer, count_buffer_offset);
+
+    D3D12_WRITEBUFFERIMMEDIATE_PARAMETER write_buffer;
+    write_buffer.Value = 10;
+    write_buffer.Dest = list->device->debug_buffer->lpVtbl->GetGPUVirtualAddress(list->device->debug_buffer);
+    D3D12_WRITEBUFFERIMMEDIATE_MODE mode = D3D12_WRITEBUFFERIMMEDIATE_MODE_DEFAULT;
+    iface->lpVtbl->WriteBufferImmediate(iface, 1, &write_buffer, &mode);
 
     vk_procs = &list->device->vk_procs;
 
@@ -7957,6 +8065,10 @@ static void d3d12_command_queue_execute(struct d3d12_command_queue *command_queu
 
     if (!(vk_queue = vkd3d_queue_acquire(command_queue->vkd3d_queue)))
     {
+        void *data;
+        command_queue->device->debug_buffer->lpVtbl->Map(command_queue->device->debug_buffer, 0, 0, &data);
+        ERR("bla %d\n", *((UINT*)data));
+
         ERR("Failed to acquire queue %p.\n", command_queue->vkd3d_queue);
         return;
     }
@@ -7974,7 +8086,12 @@ static void d3d12_command_queue_execute(struct d3d12_command_queue *command_queu
 #endif
 
     if ((vr = VK_CALL(vkQueueSubmit(vk_queue, num_submits, submit_desc, VK_NULL_HANDLE))) < 0)
+    {
+        void *data;
+        command_queue->device->debug_buffer->lpVtbl->Map(command_queue->device->debug_buffer, 0, 0, &data);
+        ERR("bla %d\n", *((UINT*)data));
         ERR("Failed to submit queue(s), vr %d.\n", vr);
+    }
 
 #ifdef VKD3D_ENABLE_RENDERDOC
     if (debug_capture)
