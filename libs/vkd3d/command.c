@@ -7354,7 +7354,15 @@ static void STDMETHODCALLTYPE d3d12_command_queue_ExecuteCommandLists(ID3D12Comm
     sub.execute.count = command_list_count;
     sub.execute.outstanding_submissions_count = outstanding;
     d3d12_command_queue_add_submission(command_queue, &sub);
+
+    /*struct d3d12_fence *fence;
+    d3d12_device_CreateFence(&command_queue->device->ID3D12Device_iface)*/
+    d3d12_command_queue_acquire_serialized(command_queue);
+    d3d12_command_queue_release_serialized(command_queue);
+
+    vkd3d_queue_wait_idle(command_queue->vkd3d_queue, &command_queue->device->vk_procs);
 }
+
 
 static void STDMETHODCALLTYPE d3d12_command_queue_SetMarker(ID3D12CommandQueue *iface,
         UINT metadata, const void *data, UINT size)
@@ -8192,7 +8200,7 @@ static void d3d12_command_queue_add_submission(struct d3d12_command_queue *queue
     pthread_mutex_unlock(&queue->queue_lock);
 }
 
-static void d3d12_command_queue_acquire_serialized(struct d3d12_command_queue *queue)
+void d3d12_command_queue_acquire_serialized(struct d3d12_command_queue *queue)
 {
     /* In order to make sure all pending operations queued so far have been submitted,
      * we build a drain task which will increment the queue_drain_count once the thread has finished all its work. */
@@ -8210,7 +8218,7 @@ static void d3d12_command_queue_acquire_serialized(struct d3d12_command_queue *q
         pthread_cond_wait(&queue->queue_cond, &queue->queue_lock);
 }
 
-static void d3d12_command_queue_release_serialized(struct d3d12_command_queue *queue)
+void d3d12_command_queue_release_serialized(struct d3d12_command_queue *queue)
 {
     pthread_mutex_unlock(&queue->queue_lock);
 }

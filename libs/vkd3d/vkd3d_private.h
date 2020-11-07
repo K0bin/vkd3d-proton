@@ -2207,4 +2207,7 @@ struct vkd3d_view *vkd3d_view_map_create_view(struct vkd3d_view_map *view_map,
 #define VKD3D_VENDOR_ID_AMD 0x1002
 #define VKD3D_VENDOR_ID_INTEL 0x8086
 
+void d3d12_command_queue_release_serialized(struct d3d12_command_queue *queue);
+void d3d12_command_queue_acquire_serialized(struct d3d12_command_queue *queue);
+
 #endif  /* __VKD3D_PRIVATE_H */
