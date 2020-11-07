@@ -2852,11 +2852,11 @@ static HRESULT STDMETHODCALLTYPE d3d12_command_list_Reset(d3d12_command_list_ifa
     TRACE("iface %p, allocator %p, initial_pipeline_state %p.\n",
             iface, allocator, initial_pipeline_state);
 
-    D3D12_WRITEBUFFERIMMEDIATE_PARAMETER write_buffer;
+    /*D3D12_WRITEBUFFERIMMEDIATE_PARAMETER write_buffer;
     write_buffer.Value = 15;
     write_buffer.Dest = list->device->debug_buffer->lpVtbl->GetGPUVirtualAddress(list->device->debug_buffer);
     D3D12_WRITEBUFFERIMMEDIATE_MODE mode = D3D12_WRITEBUFFERIMMEDIATE_MODE_DEFAULT;
-    iface->lpVtbl->WriteBufferImmediate(iface, 1, &write_buffer, &mode);
+    iface->lpVtbl->WriteBufferImmediate(iface, 1, &write_buffer, &mode);*/
 
     if (!allocator_impl)
     {
