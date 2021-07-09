@@ -82,7 +82,7 @@ static HRESULT vkd3d_select_memory_flags(struct d3d12_device *device, const D3D1
             break;
 
         case D3D12_HEAP_TYPE_UPLOAD:
-            *type_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            *type_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
             break;
 
         case D3D12_HEAP_TYPE_READBACK:
