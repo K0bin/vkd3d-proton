@@ -360,8 +360,8 @@ static bool d3d12_descriptor_range_can_hoist_cbv_descriptor(
      * We only care about CBVs. SRVs and UAVs are too fiddly
      * since they don't necessary map to buffers at all. */
     if (!(device->bindless_state.flags & VKD3D_HOIST_STATIC_TABLE_CBV) ||
-            range->RangeType != D3D12_DESCRIPTOR_RANGE_TYPE_CBV ||
-            range->NumDescriptors != 1)
+            range->RangeType != D3D12_DESCRIPTOR_RANGE_TYPE_CBV) //||
+            //range->NumDescriptors != 1)
     {
         return false;
     }
@@ -399,9 +399,13 @@ static HRESULT d3d12_root_signature_info_count_descriptors(struct d3d12_root_sig
             if (!(desc->Flags & D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE) &&
                     d3d12_descriptor_range_can_hoist_cbv_descriptor(device, range))
             {
-                info->hoist_descriptor_count += 1;
+                info->hoist_descriptor_count += range->NumDescriptors;
+                info->binding_count += range->NumDescriptors;
             }
-            info->binding_count += 1;
+            else
+            {
+                info->binding_count += 1;
+            }
             break;
         case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER:
             info->binding_count += 1;
@@ -874,7 +878,7 @@ static HRESULT d3d12_root_signature_init_root_descriptors(struct d3d12_root_sign
                     vk_binding->binding = context->vk_binding;
 
                     vk_binding->descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                    vk_binding->descriptorCount = 1;
+                    vk_binding->descriptorCount = range->NumDescriptors;
                     vk_binding->stageFlags = stage_flags_from_visibility(p->ShaderVisibility);
                     vk_binding->pImmutableSamplers = NULL;
 
