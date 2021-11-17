@@ -333,6 +333,7 @@ static void vkd3d_wait_for_gpu_timeline_semaphore(struct vkd3d_fence_worker *wor
     VkSemaphoreWaitInfoKHR wait_info;
     HRESULT hr;
     int vr;
+          TRACE("vkd3d_wait_for_gpu_timeline_semaphore\n");
 
     wait_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR;
     wait_info.pNext = NULL;
@@ -377,11 +378,13 @@ static void *vkd3d_fence_worker_main(void *arg)
 
     for (;;)
     {
+          TRACE("fence worker iteration\n");
         if ((rc = pthread_mutex_lock(&worker->mutex)))
         {
             ERR("Failed to lock mutex, error %d.\n", rc);
             break;
         }
+          TRACE("fence worker iteration1\n");
 
         if (!worker->enqueued_fence_count && !worker->should_exit)
         {
@@ -392,6 +395,7 @@ static void *vkd3d_fence_worker_main(void *arg)
                 break;
             }
         }
+          TRACE("fence worker iteration2\n");
 
         old_fences_size = cur_fences_size;
         old_fences = cur_fences;
@@ -410,8 +414,10 @@ static void *vkd3d_fence_worker_main(void *arg)
         for (i = 0; i < cur_fence_count; i++)
             vkd3d_wait_for_gpu_timeline_semaphore(worker, &cur_fences[i]);
 
-        if (do_exit)
+        if (do_exit) {
+          TRACE("fence worker exit\n");
             break;
+        }
     }
 
     vkd3d_free(cur_fences);
@@ -1718,6 +1724,7 @@ static HRESULT STDMETHODCALLTYPE d3d12_command_allocator_Reset(ID3D12CommandAllo
 
     allocator->query_pool_count = 0;
     memset(&allocator->active_query_pools, 0, sizeof(allocator->active_query_pools));
+    TRACE("Done resetting.\n");
     return S_OK;
 }
 

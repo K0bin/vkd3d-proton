@@ -37,5 +37,11 @@ typedef enum DXGI_COLOR_SPACE_TYPE
     DXGI_COLOR_SPACE_CUSTOM                        = 0xffffffff,
 } DXGI_COLOR_SPACE_TYPE;
 
+typedef struct DXGI_RATIONAL
+{
+    UINT Numerator;
+    UINT Denominator;
+} DXGI_RATIONAL;
+
 typedef struct _D3DCOLORVALUE D3DCOLORVALUE, DXGI_RGBA;
 typedef struct DXGI_MODE_DESC DXGI_MODE_DESC;

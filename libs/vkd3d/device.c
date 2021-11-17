@@ -2539,6 +2539,11 @@ HRESULT STDMETHODCALLTYPE d3d12_device_QueryInterface(d3d12_device_iface *iface,
         return S_OK;
     }
 
+    if (IsEqualGUID(riid, &IID_ID3D12VideoDevice))
+    {
+      //return d3d12_create_video_device(object);
+    }
+
     if (IsEqualGUID(riid, &IID_ID3D12DeviceExt))
     {
         struct d3d12_device *device = impl_from_ID3D12Device(iface);
@@ -4439,14 +4444,20 @@ static HRESULT STDMETHODCALLTYPE d3d12_device_OpenExistingHeapFromAddress(d3d12_
     }
 
     /* Allocation base must equal address. */
-    if (info.AllocationBase != address)
+    if (info.AllocationBase != address) {
+        ERR("Allocation base must equal address.\n");
         return E_INVALIDARG;
-    if (info.BaseAddress != info.AllocationBase)
+    }
+    if (info.BaseAddress != info.AllocationBase) {
+        ERR("Allocation base must equal address2.\n");
         return E_INVALIDARG;
+    }
 
     /* All pages must be committed. */
-    if (info.State != MEM_COMMIT)
+    if (info.State != MEM_COMMIT) {
+        ERR("All pages must be committed.\n");
         return E_INVALIDARG;
+    }
 
     /* We can only have one region of page protection types.
      * Verify this by querying the end of the range. */
@@ -4454,6 +4465,7 @@ static HRESULT STDMETHODCALLTYPE d3d12_device_OpenExistingHeapFromAddress(d3d12_
     if (VirtualQuery((uint8_t *)address + allocation_size, &info, sizeof(info)) &&
             info.AllocationBase == address)
     {
+        ERR("All pages must have same protections, so there cannot be multiple regions for VirtualQuery.\n");
         /* All pages must have same protections, so there cannot be multiple regions for VirtualQuery. */
         return E_INVALIDARG;
     }

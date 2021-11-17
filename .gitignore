@@ -2,4 +2,8 @@ build
 build.*
 vkd3d-proton-*.tar.zst
 vkd3d-proton-*/
-
+build_dev
+build_debugopt
+.vscode
+build_vs
+build_linux

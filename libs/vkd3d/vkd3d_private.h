@@ -38,6 +38,7 @@
 #include "vkd3d_swapchain_factory.h"
 #include "vkd3d_command_list_vkd3d_ext.h"
 #include "vkd3d_device_vkd3d_ext.h"
+#include <vkd3d_d3d12_video.h>
 #include "vkd3d_string.h"
 #include <assert.h>
 #include <inttypes.h>
@@ -3052,6 +3053,31 @@ HRESULT d3d12_state_object_create(struct d3d12_device *device, const D3D12_STATE
 static inline struct d3d12_state_object *impl_from_ID3D12StateObject(ID3D12StateObject *iface)
 {
     return CONTAINING_RECORD(iface, struct d3d12_state_object, ID3D12StateObject_iface);
+}
+
+/* ID3D12VideoDevice */
+typedef ID3D12VideoDevice d3d12_video_device_iface;
+
+struct d3d12_video_device
+{
+    d3d12_video_device_iface ID3D12VideoDevice_iface;
+    LONG refcount;
+
+    struct d3d12_device *device;
+
+    struct vkd3d_private_store private_store;
+};
+
+
+HRESULT d3d12_create_video_device(ID3D12VideoDevice **video);
+
+static inline struct d3d12_video_device *impl_from_ID3D12VideoDevice(d3d12_video_device_iface *iface)
+{
+    extern CONST_VTBL struct ID3D12VideoDeviceVtbl d3d12_video_device_vtbl;
+    if (!iface)
+        return NULL;
+    assert(iface->lpVtbl == &d3d12_video_device_vtbl);
+    return CONTAINING_RECORD(iface, struct d3d12_video_device, ID3D12VideoDevice_iface);
 }
 
 /* utils */
