@@ -38,6 +38,7 @@
 #include "vkd3d_swapchain_factory.h"
 #include "vkd3d_command_list_vkd3d_ext.h"
 #include "vkd3d_device_vkd3d_ext.h"
+#include <vkd3d_d3d12_video.h>
 #include "vkd3d_string.h"
 #include <assert.h>
 #include <inttypes.h>
@@ -2778,6 +2779,9 @@ struct vkd3d_queue_family_info
     VkQueueFlags vk_queue_flags;
 };
 
+/* ID3D12VideoDevice */
+typedef ID3D12VideoDevice d3d12_video_device_iface;
+
 /* ID3D12Device */
 typedef ID3D12Device9 d3d12_device_iface;
 
@@ -2791,6 +2795,7 @@ struct d3d12_device
 {
     d3d12_device_iface ID3D12Device_iface;
     d3d12_device_vkd3d_ext_iface ID3D12DeviceExt_iface;
+    d3d12_video_device_iface ID3D12VideoDevice_iface;
     LONG refcount;
 
     VkDevice vk_device;

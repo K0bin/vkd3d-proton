@@ -66,12 +66,14 @@
 #define __vkd3d_dxgi1_2_h__
 #define __vkd3d_dxgi1_3_h__
 #define __vkd3d_dxgi1_4_h__
+#define __vkd3d_dxgitype_h__
 
 #include <vkd3d_swapchain_factory.h>
 #include <vkd3d_command_list_vkd3d_ext.h>
 #include <vkd3d_device_vkd3d_ext.h>
 #include <vkd3d_d3d12.h>
 #include <vkd3d_d3d12sdklayers.h>
+#include <vkd3d_d3d12_video.h>
 
 /* End of MinGW hack. All Windows headers have been included */
 #ifdef __MINGW32__
