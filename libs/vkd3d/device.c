@@ -5434,7 +5434,7 @@ static HRESULT STDMETHODCALLTYPE d3d12_device_CreateStateObject(d3d12_device_ifa
     return return_interface(&state->ID3D12StateObject_iface, &IID_ID3D12StateObject, iid, state_object);
 }
 
-static void STDMETHODCALLTYPE d3d12_device_GetRaytracingAccelerationStructurePrebuildInfo(d3d12_device_iface *iface,
+void STDMETHODCALLTYPE d3d12_device_GetRaytracingAccelerationStructurePrebuildInfo(d3d12_device_iface *iface,
         const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS *desc,
         D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO *info)
 {
@@ -5444,7 +5444,7 @@ static void STDMETHODCALLTYPE d3d12_device_GetRaytracingAccelerationStructurePre
     struct vkd3d_acceleration_structure_build_info build_info;
     VkAccelerationStructureBuildSizesInfoKHR size_info;
 
-    TRACE("iface %p, desc %p, info %p!\n", iface, desc, info);
+    WARN("iface %p, desc %p, info %p!\n", iface, desc, info);
 
     if (!d3d12_device_supports_ray_tracing_tier_1_0(device))
     {

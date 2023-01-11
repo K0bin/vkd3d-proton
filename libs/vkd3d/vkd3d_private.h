@@ -2381,6 +2381,12 @@ union vkd3d_descriptor_heap_state
     } sets;
 };
 
+struct d3d12_scratch_usage
+{
+    VkDeviceAddress start_address;
+    VkDeviceSize size;
+};
+
 struct d3d12_command_list
 {
     d3d12_command_list_iface ID3D12GraphicsCommandList_iface;
@@ -2451,6 +2457,9 @@ struct d3d12_command_list
     VkBuffer so_counter_buffers[D3D12_SO_BUFFER_SLOT_COUNT];
     VkDeviceSize so_counter_buffer_offsets[D3D12_SO_BUFFER_SLOT_COUNT];
 
+    bool is_doing_as_builds;
+    bool has_unsynced_blas_builds;
+
     struct vkd3d_initial_transition *init_transitions;
     size_t init_transitions_size;
     size_t init_transitions_count;
@@ -2473,6 +2482,10 @@ struct d3d12_command_list
     const struct vkd3d_descriptor_metadata_view *cbv_srv_uav_descriptors_view;
 
     struct d3d12_resource *vrs_image;
+
+    struct d3d12_scratch_usage *scratch_tracking;
+    size_t scratch_tracking_count;
+    size_t scratch_tracking_size;
 
     struct d3d12_resource_tracking *dsv_resource_tracking;
     size_t dsv_resource_tracking_count;
@@ -4273,6 +4286,7 @@ struct vkd3d_acceleration_structure_build_info
     VkAccelerationStructureBuildGeometryInfoKHR build_info;
     VkAccelerationStructureGeometryKHR *geometries;
     uint32_t *primitive_counts;
+    bool needs_barrier;
 };
 
 void vkd3d_acceleration_structure_build_info_cleanup(

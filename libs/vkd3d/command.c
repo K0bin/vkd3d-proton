@@ -4803,6 +4803,25 @@ static HRESULT STDMETHODCALLTYPE d3d12_command_list_Close(d3d12_command_list_ifa
     /* If there are pending subresource updates, execute them now that all other operations have completed */
     d3d12_command_list_flush_subresource_updates(list);
 
+    if (list->is_doing_as_builds && false)
+    {
+        // HACK FOR WITCHER 3
+
+        // THIS WORKS IF ENABLED
+        VkMemoryBarrier memory_barrier;
+        memory_barrier.pNext = NULL;
+        memory_barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+        //memory_barrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
+        memory_barrier.srcAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+        memory_barrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR
+                                        | VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+
+        VK_CALL(vkCmdPipelineBarrier(list->vk_command_buffer,
+            VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
+            VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
+            0, 1, &memory_barrier, 0, NULL, 0, NULL));
+    }
+
 #ifdef VKD3D_ENABLE_BREADCRUMBS
     if (vkd3d_config_flags & VKD3D_CONFIG_FLAG_BREADCRUMBS)
         vkd3d_breadcrumb_tracer_end_command_list(list);
@@ -5075,10 +5094,12 @@ static void d3d12_command_list_reset_internal_state(struct d3d12_command_list *l
     list->init_transitions_count = 0;
     list->query_ranges_count = 0;
     list->active_queries_count = 0;
+    list->scratch_tracking_count = 0;
     list->pending_queries_count = 0;
     list->dsv_resource_tracking_count = 0;
     list->subresource_tracking_count = 0;
     list->tracked_copy_buffer_count = 0;
+    list->is_doing_as_builds = false;
 
     list->rendering_info.state_flags = 0;
     list->execute_indirect.has_emitted_indirect_to_compute_barrier = false;
@@ -6149,6 +6170,9 @@ static bool d3d12_command_list_begin_render_pass(struct d3d12_command_list *list
     }
 
     d3d12_command_list_handle_active_queries(list, false);
+
+    list->is_doing_as_builds = false;
+
     return true;
 }
 
@@ -6236,6 +6260,8 @@ static void STDMETHODCALLTYPE d3d12_command_list_DrawInstanced(d3d12_command_lis
     const struct vkd3d_vk_device_procs *vk_procs = &list->device->vk_procs;
     struct vkd3d_scratch_allocation scratch;
 
+    list->is_doing_as_builds = false;
+
     TRACE("iface %p, vertex_count_per_instance %u, instance_count %u, "
             "start_vertex_location %u, start_instance_location %u.\n",
             iface, vertex_count_per_instance, instance_count,
@@ -6307,6 +6333,8 @@ static void STDMETHODCALLTYPE d3d12_command_list_DrawIndexedInstanced(d3d12_comm
     const struct vkd3d_vk_device_procs *vk_procs = &list->device->vk_procs;
     struct vkd3d_scratch_allocation scratch;
 
+    list->is_doing_as_builds = false;
+
     TRACE("iface %p, index_count_per_instance %u, instance_count %u, start_vertex_location %u, "
             "base_vertex_location %d, start_instance_location %u.\n",
             iface, index_count_per_instance, instance_count, start_vertex_location,
@@ -6357,7 +6385,9 @@ static void STDMETHODCALLTYPE d3d12_command_list_Dispatch(d3d12_command_list_ifa
     const struct vkd3d_vk_device_procs *vk_procs = &list->device->vk_procs;
     struct vkd3d_scratch_allocation scratch;
 
-    TRACE("iface %p, x %u, y %u, z %u.\n", iface, x, y, z);
+    WARN("iface %p, x %u, y %u, z %u.\n", iface, x, y, z);
+
+    list->is_doing_as_builds = false;
 
     if (list->predicate_va)
     {
@@ -6398,11 +6428,13 @@ static void STDMETHODCALLTYPE d3d12_command_list_CopyBufferRegion(d3d12_command_
     VkCopyBufferInfo2KHR copy_info;
     VkBufferCopy2KHR buffer_copy;
 
-    TRACE("iface %p, dst_resource %p, dst_offset %#"PRIx64", src_resource %p, "
+    WARN("iface %p, dst_resource %p, dst_offset %#"PRIx64", src_resource %p, "
             "src_offset %#"PRIx64", byte_count %#"PRIx64".\n",
             iface, dst, dst_offset, src, src_offset, byte_count);
 
     vk_procs = &list->device->vk_procs;
+
+    list->is_doing_as_builds = false;
 
     dst_resource = impl_from_ID3D12Resource(dst);
     assert(d3d12_resource_is_buffer(dst_resource));
@@ -7165,6 +7197,8 @@ static void STDMETHODCALLTYPE d3d12_command_list_CopyTextureRegion(d3d12_command
     bool alias;
     size_t i;
 
+    list->is_doing_as_builds = false;
+
     TRACE("iface %p, dst %p, dst_x %u, dst_y %u, dst_z %u, src %p, src_box %p.\n",
             iface, dst, dst_x, dst_y, dst_z, src, src_box);
 
@@ -7238,7 +7272,7 @@ static void STDMETHODCALLTYPE d3d12_command_list_CopyResource(d3d12_command_list
     unsigned int layer_count;
     unsigned int i;
 
-    TRACE("iface %p, dst_resource %p, src_resource %p.\n", iface, dst, src);
+    WARN("iface %p, dst_resource %p, src_resource %p.\n", iface, dst, src);
 
     vk_procs = &list->device->vk_procs;
 
@@ -7250,6 +7284,8 @@ static void STDMETHODCALLTYPE d3d12_command_list_CopyResource(d3d12_command_list
 
     d3d12_command_list_end_current_render_pass(list, false);
     d3d12_command_list_end_transfer_batch(list);
+
+    list->is_doing_as_builds = false;
 
     if (d3d12_resource_is_buffer(dst_resource))
     {
@@ -7363,6 +7399,8 @@ static void STDMETHODCALLTYPE d3d12_command_list_CopyTiles(d3d12_command_list_if
     VkBufferCopy2KHR buffer_copy;
     bool copy_to_buffer;
     unsigned int i;
+
+    list->is_doing_as_builds = false;
 
     TRACE("iface %p, tiled_resource %p, region_coord %p, region_size %p, "
             "buffer %p, buffer_offset %#"PRIx64", flags %#x.\n",
@@ -7653,6 +7691,9 @@ static void STDMETHODCALLTYPE d3d12_command_list_ResolveSubresource(d3d12_comman
 
     TRACE("iface %p, dst_resource %p, dst_sub_resource_idx %u, src_resource %p, src_sub_resource_idx %u, "
             "format %#x.\n", iface, dst, dst_sub_resource_idx, src, src_sub_resource_idx, format);
+
+
+    list->is_doing_as_builds = false;
 
     dst_resource = impl_from_ID3D12Resource(dst);
     src_resource = impl_from_ID3D12Resource(src);
@@ -8127,11 +8168,13 @@ static void STDMETHODCALLTYPE d3d12_command_list_ResourceBarrier(d3d12_command_l
     bool have_split_barriers = false;
     unsigned int i, j;
 
-    TRACE("iface %p, barrier_count %u, barriers %p.\n", iface, barrier_count, barriers);
+    WARN("iface %p, barrier_count %u, barriers %p.\n", iface, barrier_count, barriers);
 
     d3d12_command_list_end_current_render_pass(list, false);
     d3d12_command_list_end_transfer_batch(list);
     d3d12_command_list_barrier_batch_init(&batch);
+
+    list->is_doing_as_builds = false;
 
     for (i = 0; i < barrier_count; ++i)
     {
@@ -8290,6 +8333,14 @@ static void STDMETHODCALLTYPE d3d12_command_list_ResourceBarrier(d3d12_command_l
                     state_mask |= D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
                 if (!preserve_resource || !d3d12_resource_is_acceleration_structure(preserve_resource))
                     state_mask |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+
+
+                WARN("UAV barrier\n");
+                list->scratch_tracking_count = 0;
+
+                // Both STATE_UAV as well as STATE_RT_ACCELERATION_STRUCTURE will result in
+                // an ACCELERATION_STRUCTURE sync
+                list->has_unsynced_blas_builds = false;
 
                 assert(state_mask);
 
@@ -9178,6 +9229,8 @@ static void STDMETHODCALLTYPE d3d12_command_list_ClearDepthStencilView(d3d12_com
     const struct d3d12_rtv_desc *dsv_desc = d3d12_rtv_desc_from_cpu_handle(dsv);
     VkImageAspectFlags clear_aspects = 0;
 
+    list->is_doing_as_builds = false;
+
     TRACE("iface %p, dsv %#lx, flags %#x, depth %.8e, stencil 0x%02x, rect_count %u, rects %p.\n",
             iface, dsv.ptr, flags, depth, stencil, rect_count, rects);
 
@@ -9205,6 +9258,8 @@ static void STDMETHODCALLTYPE d3d12_command_list_ClearRenderTargetView(d3d12_com
     struct d3d12_command_list *list = impl_from_ID3D12GraphicsCommandList(iface);
     const struct d3d12_rtv_desc *rtv_desc = d3d12_rtv_desc_from_cpu_handle(rtv);
     VkClearValue clear_value;
+
+    list->is_doing_as_builds = false;
 
     TRACE("iface %p, rtv %#lx, color %p, rect_count %u, rects %p.\n",
             iface, rtv.ptr, color, rect_count, rects);
@@ -9750,8 +9805,12 @@ static void STDMETHODCALLTYPE d3d12_command_list_ClearUnorderedAccessViewUint(d3
     struct d3d12_desc_split d;
     VkClearColorValue color;
 
+    list->is_doing_as_builds = false;
+
     TRACE("iface %p, gpu_handle %#"PRIx64", cpu_handle %lx, resource %p, values %p, rect_count %u, rects %p.\n",
             iface, gpu_handle.ptr, cpu_handle.ptr, resource, values, rect_count, rects);
+
+    list->is_doing_as_builds = false;
 
     memcpy(color.uint32, values, sizeof(color.uint32));
 
@@ -9876,6 +9935,8 @@ static void STDMETHODCALLTYPE d3d12_command_list_ClearUnorderedAccessViewFloat(d
     TRACE("iface %p, gpu_handle %#"PRIx64", cpu_handle %lx, resource %p, values %p, rect_count %u, rects %p.\n",
             iface, gpu_handle.ptr, cpu_handle.ptr, resource, values, rect_count, rects);
 
+    list->is_doing_as_builds = false;
+
     d = d3d12_desc_decode_va(cpu_handle.ptr);
     memcpy(color.float32, values, sizeof(color.float32));
     resource_impl = impl_from_ID3D12Resource(resource);
@@ -9963,6 +10024,8 @@ static void STDMETHODCALLTYPE d3d12_command_list_DiscardResource(d3d12_command_l
     bool full_discard;
 
     TRACE("iface %p, resource %p, region %p.\n", iface, resource, region);
+
+    list->is_doing_as_builds = false;
 
     /* This method is only supported on DIRECT and COMPUTE queues,
      * but we only implement it for render targets, so ignore it
@@ -10900,6 +10963,8 @@ static void STDMETHODCALLTYPE d3d12_command_list_ExecuteIndirect(d3d12_command_l
             iface, command_signature, max_command_count, arg_buffer, arg_buffer_offset,
             count_buffer, count_buffer_offset);
 
+    list->is_doing_as_builds = false;
+
     if (!max_command_count)
         return;
 
@@ -11169,6 +11234,8 @@ static void STDMETHODCALLTYPE d3d12_command_list_ResolveSubresourceRegion(d3d12_
             iface, dst, dst_sub_resource_idx, dst_x, dst_y,
             src, src_sub_resource_idx, src_rect, format, mode);
 
+
+    list->is_doing_as_builds = false;
     dst_resource = impl_from_ID3D12Resource(dst);
     src_resource = impl_from_ID3D12Resource(src);
 
@@ -11424,9 +11491,10 @@ static void STDMETHODCALLTYPE d3d12_command_list_BuildRaytracingAccelerationStru
     struct d3d12_command_list *list = impl_from_ID3D12GraphicsCommandList(iface);
     const struct vkd3d_vk_device_procs *vk_procs = &list->device->vk_procs;
     struct vkd3d_acceleration_structure_build_info build_info;
+    VkMemoryBarrier memory_barrier;
 
-    TRACE("iface %p, desc %p, num_postbuild_info_descs %u, postbuild_info_descs %p\n",
-            iface, desc, num_postbuild_info_descs, postbuild_info_descs);
+    WARN("iface %p, desc %p, num_postbuild_info_descs %u, postbuild_info_descs %p, scratch: %lu, update? %u\n",
+            iface, desc, num_postbuild_info_descs, postbuild_info_descs, desc->ScratchAccelerationStructureData, desc->Inputs.Flags & D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE);
 
     if (!d3d12_device_supports_ray_tracing_tier_1_0(list->device))
     {
@@ -11469,6 +11537,122 @@ static void STDMETHODCALLTYPE d3d12_command_list_BuildRaytracingAccelerationStru
 
     d3d12_command_list_end_current_render_pass(list, true);
     d3d12_command_list_end_transfer_batch(list);
+    d3d12_command_list_resolve_buffer_copy_writes(list);
+
+    // Do a full barrier before the first build AS call after doing anything else
+    bool doBarrier = !list->is_doing_as_builds;
+
+    if (desc->Inputs.Type == D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL)
+    {
+        list->has_unsynced_blas_builds = true;
+    }
+    else if (list->has_unsynced_blas_builds)
+    {
+        // BLAS->TLAS without a barrier inbetween
+
+        WARN("Emitting BLAS->TLAS acceleration structure build barrier because of a suspected game bug.\n");
+        doBarrier = true;
+    }
+
+    if (doBarrier)
+    {
+        list->has_unsynced_blas_builds = false;
+
+        memory_barrier.pNext = NULL;
+        memory_barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+        memory_barrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
+        memory_barrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR
+                                        | VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+
+        VK_CALL(vkCmdPipelineBarrier(list->vk_command_buffer,
+            VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+            VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
+            0, 1, &memory_barrier, 0, NULL, 0, NULL));
+    }
+
+    list->is_doing_as_builds = true;
+
+    D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO prebuild_info;
+    d3d12_device_GetRaytracingAccelerationStructurePrebuildInfo(list->device, desc->Inputs, &prebuild_info);
+
+
+    bool conflict = false;
+
+    for (uint32_t i = 0; i < list->scratch_tracking_count; i++) {
+        if (
+            ((desc->ScratchAccelerationStructureData + prebuild_info.ScratchDataSizeInBytes > list->scratch_tracking[i].start_address
+            && desc->ScratchAccelerationStructureData + prebuild_info.ScratchDataSizeInBytes < list->scratch_tracking[i].start_address + list->scratch_tracking[i].size)
+            || (desc->ScratchAccelerationStructureData < list->scratch_tracking[i].start_address + list->scratch_tracking[i].size
+            && desc->ScratchAccelerationStructureData >= list->scratch_tracking[i].start_address))
+            ||
+            ((list->scratch_tracking[i].start_address + list->scratch_tracking[i].size > desc->ScratchAccelerationStructureData
+            && list->scratch_tracking[i].start_address + list->scratch_tracking[i].size < desc->ScratchAccelerationStructureData + prebuild_info.ScratchDataSizeInBytes)
+            || (list->scratch_tracking[i].start_address < desc->ScratchAccelerationStructureData + prebuild_info.ScratchDataSizeInBytes
+            && list->scratch_tracking[i].start_address >= desc->ScratchAccelerationStructureData))
+        )
+        {
+            // Log scratch AS conflicts
+
+            conflict = true;
+            int64_t offsetToOldUsage = desc->ScratchAccelerationStructureData - list->scratch_tracking[i].start_address;
+            ERR("UNSYNCED SCRATCH ACCESS. list: %p, earlier scratch use: %lu - %lu, current scratch use: %lu - %lu, distance: %ld, current size: %lu, previous size: %lu\n", list,
+            list->scratch_tracking[i].start_address, list->scratch_tracking[i].start_address + list->scratch_tracking[i].size,
+            desc->ScratchAccelerationStructureData, desc->ScratchAccelerationStructureData + prebuild_info.ScratchDataSizeInBytes, offsetToOldUsage,
+            prebuild_info.ScratchDataSizeInBytes, list->scratch_tracking[i].size);
+        }
+    }
+
+    for (uint32_t i = 0; i < list->scratch_tracking_count; i++) {
+        if (
+            ((desc->DestAccelerationStructureData + prebuild_info.ResultDataMaxSizeInBytes > list->scratch_tracking[i].start_address
+            && desc->DestAccelerationStructureData + prebuild_info.ResultDataMaxSizeInBytes < list->scratch_tracking[i].start_address + list->scratch_tracking[i].size)
+            || (desc->DestAccelerationStructureData < list->scratch_tracking[i].start_address + list->scratch_tracking[i].size
+            && desc->DestAccelerationStructureData >= list->scratch_tracking[i].start_address))
+            ||
+            ((list->scratch_tracking[i].start_address + list->scratch_tracking[i].size > desc->DestAccelerationStructureData
+            && list->scratch_tracking[i].start_address + list->scratch_tracking[i].size < desc->DestAccelerationStructureData + prebuild_info.ResultDataMaxSizeInBytes)
+            || (list->scratch_tracking[i].start_address < desc->DestAccelerationStructureData + prebuild_info.ResultDataMaxSizeInBytes
+            && list->scratch_tracking[i].start_address >= desc->DestAccelerationStructureData))
+        )
+        {
+            // Log result AS conflicts
+
+            conflict = true;
+            int64_t offsetToOldUsage = desc->DestAccelerationStructureData - list->scratch_tracking[i].start_address;
+            ERR("UNSYNCED RESULT ACCESS. list: %p, earlier use: %lu - %lu, current result use: %lu - %lu, distance: %ld, current size: %lu, previous size: %lu\n", list,
+            list->scratch_tracking[i].start_address, list->scratch_tracking[i].start_address + list->scratch_tracking[i].size,
+            desc->DestAccelerationStructureData, desc->DestAccelerationStructureData + prebuild_info.ResultDataMaxSizeInBytes, offsetToOldUsage,
+            prebuild_info.ScratchDataSizeInBytes, list->scratch_tracking[i].size);
+        }
+    }
+
+    if (!conflict) {
+            WARN("SCRATCH ACCESS. list: %p, scratch use: %lu - %lu\n", list,
+            desc->ScratchAccelerationStructureData, desc->ScratchAccelerationStructureData + prebuild_info.ScratchDataSizeInBytes);
+    }
+
+    vkd3d_array_reserve((void**)&list->scratch_tracking, &list->scratch_tracking_size,
+            list->scratch_tracking_count + 1, sizeof(*list->scratch_tracking));
+
+    struct d3d12_scratch_usage scratch_usage;
+    scratch_usage.start_address = desc->ScratchAccelerationStructureData;
+    scratch_usage.size = prebuild_info.ScratchDataSizeInBytes;
+
+    list->scratch_tracking[list->scratch_tracking_count++] = scratch_usage;
+
+    vkd3d_array_reserve((void**)&list->scratch_tracking, &list->scratch_tracking_size,
+            list->scratch_tracking_count + 1, sizeof(*list->scratch_tracking));
+
+    scratch_usage.start_address = desc->DestAccelerationStructureData;
+    scratch_usage.size = prebuild_info.ResultDataMaxSizeInBytes;
+
+    list->scratch_tracking[list->scratch_tracking_count++] = scratch_usage;
+
+    
+
+
+
+    WARN("AS build, scratch: %p, dest: %p\n", desc->ScratchAccelerationStructureData, desc->DestAccelerationStructureData);
 
     VK_CALL(vkCmdBuildAccelerationStructuresKHR(list->vk_command_buffer, 1,
             &build_info.build_info, build_info.build_range_ptrs));
@@ -11512,7 +11696,7 @@ static void STDMETHODCALLTYPE d3d12_command_list_CopyRaytracingAccelerationStruc
 {
     struct d3d12_command_list *list = impl_from_ID3D12GraphicsCommandList(iface);
 
-    TRACE("iface %p, dst_data %#"PRIx64", src_data %#"PRIx64", mode %u\n",
+    WARN("iface %p, dst_data %#"PRIx64", src_data %#"PRIx64", mode %u\n",
           iface, dst_data, src_data, mode);
 
     if (!d3d12_device_supports_ray_tracing_tier_1_0(list->device))
