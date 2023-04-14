@@ -31,6 +31,11 @@ vkd3d_shaders =[
   'shaders/cs_execute_indirect_patch_debug_ring.comp',
   'shaders/cs_execute_indirect_multi_dispatch.comp',
   'shaders/cs_execute_indirect_multi_dispatch_state.comp',
+
+  'shaders/hud/hud_graph_frag.frag',
+  'shaders/hud/hud_graph_vert.vert',
+  'shaders/hud/hud_text_frag.frag',
+  'shaders/hud/hud_text_vert.vert',  
 ]
 
 vkd3d_src = [
@@ -51,7 +56,9 @@ vkd3d_src = [
   'vkd3d_main.c',
   'raytracing_pipeline.c',
   'acceleration_structure.c',
-  'swapchain.c'
+  'swapchain.c',
+  'hud_font.c',
+  'hud.c'
 ]
 
 if enable_renderdoc

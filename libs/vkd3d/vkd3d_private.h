@@ -4810,4 +4810,30 @@ HANDLE vkd3d_open_kmt_handle(HANDLE kmt_handle);
 #define VKD3D_DRIVER_VERSION_PATCH_NV(v) (((v) >>  6) & 0xff)
 #define VKD3D_DRIVER_VERSION_MAKE_NV(major, minor, patch) (((major) << 22) | ((minor) << 14) | ((patch) << 6))
 
+/* HUD */
+
+struct vkd3d_hud_glyph {
+    uint32_t codePoint;
+    int32_t  x;
+    int32_t  y;
+    int32_t  w;
+    int32_t  h;
+    int32_t  originX;
+    int32_t  originY;
+};
+
+struct vkd3d_hud_font {
+    int32_t  size;
+    uint32_t width;
+    uint32_t height;
+    uint32_t falloff;
+    uint32_t advance;
+    uint32_t charCount;
+    
+    const struct vkd3d_hud_glyph* glyphs;
+    const uint8_t* texture;
+};
+
+extern const struct vkd3d_hud_font vkd3d_hud_font;
+
 #endif  /* __VKD3D_PRIVATE_H */
