@@ -4076,7 +4076,6 @@ static HRESULT d3d12_pipeline_state_init_graphics_create_info(struct d3d12_pipel
                 rt_count, ARRAY_SIZE(graphics->blend_attachments));
         rt_count = ARRAY_SIZE(graphics->blend_attachments);
     }
-    graphics->rt_count = rt_count;
 
     if (!(graphics->stage_flags & VK_SHADER_STAGE_FRAGMENT_BIT))
     {
@@ -4085,6 +4084,7 @@ static HRESULT d3d12_pipeline_state_init_graphics_create_info(struct d3d12_pipel
          * We can just pretend we have no render targets in this case, which is fine. */
         rt_count = 0;
     }
+    graphics->rt_count = rt_count;
 
     graphics->null_attachment_mask = 0;
     graphics->rtv_active_mask = 0;
