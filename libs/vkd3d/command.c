@@ -8208,7 +8208,18 @@ static void d3d12_command_list_before_copy_texture_region(struct d3d12_command_l
     }
     else if (info->batch_type == VKD3D_BATCH_TYPE_COPY_IMAGE)
     {
+        d3d12_command_list_track_resource_usage(list, src_resource, true);
         d3d12_command_list_track_resource_usage(list, dst_resource, !info->writes_full_resource);
+
+        d3d12_command_list_transition_image_layout(list, batch, src_resource->res.vk_image,
+                &info->copy.image.srcSubresource, VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_NONE,
+                src_resource->common_layout, VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_READ_BIT,
+                info->src_layout);
+
+        d3d12_command_list_transition_image_layout(list, batch, dst_resource->res.vk_image,
+                &info->copy.buffer_image.imageSubresource, VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_NONE,
+                info->writes_full_subresource ? VK_IMAGE_LAYOUT_UNDEFINED : dst_resource->common_layout,
+                VK_PIPELINE_STAGE_2_COPY_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT, info->dst_layout);
     }
 }
 
@@ -8348,7 +8359,16 @@ static void STDMETHODCALLTYPE d3d12_command_list_CopyTextureRegion(d3d12_command
                         (res->flags & VKD3D_RESOURCE_RESERVED) || (other_res->flags & VKD3D_RESOURCE_RESERVED);
                 break;
             case VKD3D_BATCH_TYPE_COPY_IMAGE:
-                /* TODO: Check for alias once we start batching barriers for image-image copies too */
+                subres = &copy_info.copy.image.dstSubresource;
+                other_subres = &other_info->copy.image.dstSubresource;
+                assert(subres->layerCount == other_subres->layerCount);
+                alias = copy_info.dst.pResource == other_info->dst.pResource &&
+                         subres->aspectMask == other_subres->aspectMask &&
+                         subres->mipLevel == other_subres->mipLevel &&
+                         (
+                            (subres->baseArrayLayer + subres->layerCount > other_subres->baseArrayLayer && subres->baseArrayLayer + subres->layerCount <= other_subres->baseArrayLayer + other_subres->layerCount)
+                            || (subres->baseArrayLayer >= other_subres->baseArrayLayer && subres->baseArrayLayer < other_subres->baseArrayLayer + other_subres->layerCount)
+                         );
                 break;
             default:
                 assert(false);
@@ -8374,6 +8394,9 @@ static void STDMETHODCALLTYPE d3d12_command_list_CopyResource(d3d12_command_list
     struct d3d12_command_list *list = impl_from_ID3D12GraphicsCommandList(iface);
     struct d3d12_resource *dst_resource, *src_resource;
     const struct vkd3d_vk_device_procs *vk_procs;
+    struct vkd3d_image_copy_info image_copy_info;
+    D3D12_TEXTURE_COPY_LOCATION dst_location;
+    D3D12_TEXTURE_COPY_LOCATION src_location;
     VkBufferCopy2 vk_buffer_copy;
     unsigned int subresource_idx;
     VkCopyBufferInfo2 copy_info;
@@ -8467,6 +8490,22 @@ static void STDMETHODCALLTYPE d3d12_command_list_CopyResource(d3d12_command_list
                     vk_image_copy.dstSubresource.aspectMask = dst_resource->format->vk_aspect_mask;
                     vk_image_copy.srcSubresource.aspectMask = src_resource->format->vk_aspect_mask;
                 }
+
+                // TODO: copy_texture_region sets the layerCount to 1
+
+                dst_location.pResource = dst;
+                dst_location.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+                dst_location.SubresourceIndex = subresource_idx;
+                dst_location.pResource = src;
+                dst_location.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+                dst_location.SubresourceIndex = subresource_idx;
+                if (!d3d12_command_list_init_copy_texture_region(list, &dst_location, 0, 0, 0, &src_location, NULL, &image_copy_info))
+                    return;
+
+                d3d12_command_list_ensure_transfer_batch(list, image_copy_info.batch_type);
+
+
+                list->transfer_batch.batch[list->transfer_batch.batch_len++] = image_copy_info;
 
                 /* CopyResource() always copies all subresources, so we can safely discard the dst_resource contents. */
                 d3d12_command_list_copy_image(list, dst_resource, dst_resource->format,
