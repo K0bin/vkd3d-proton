@@ -5099,6 +5099,20 @@ static HRESULT STDMETHODCALLTYPE d3d12_device_CheckFeatureSupport(d3d12_device_i
             return E_INVALIDARG;
         }
 
+        case D3D12_FEATURE_PREDICATION:
+        {
+            D3D12_FEATURE_DATA_PREDICATION *data = feature_data;
+            data->Supported = TRUE;
+            return S_OK;
+        }
+
+        case D3D12_FEATURE_APPLICATION_SPECIFIC_DRIVER_STATE:
+        {
+            D3D12_FEATURE_DATA_APPLICATION_SPECIFIC_DRIVER_STATE *data = feature_data;
+            data->Supported = FALSE;
+            return S_OK;
+        }
+
         default:
             FIXME("Unhandled feature %#x.\n", feature);
             return E_NOTIMPL;
