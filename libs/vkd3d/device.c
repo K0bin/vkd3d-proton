@@ -5128,6 +5128,7 @@ static HRESULT STDMETHODCALLTYPE d3d12_device_CheckFeatureSupport(d3d12_device_i
             VkBuffer vk_buffer = VK_NULL_HANDLE;
             VkImage vk_image = VK_NULL_HANDLE;
             VkMemoryRequirements memory_requirements;
+            memset(&memory_requirements, 0, sizeof(VkMemoryRequirements));
             D3D12_RESOURCE_DESC1 desc;
             desc.Dimension = data->Dimension;
             desc.Height = 1;
@@ -5165,6 +5166,8 @@ static HRESULT STDMETHODCALLTYPE d3d12_device_CheckFeatureSupport(d3d12_device_i
                         desc.Height = 16;
                         desc.DepthOrArraySize = 16;
                         break;
+                    default:
+                        break;
                 }
                 if (SUCCEEDED(vkd3d_create_image(device, &data->DestHeapProperties,
                     D3D12_HEAP_FLAG_NONE, &desc, NULL, 0, NULL, &vk_image)))
@@ -5174,6 +5177,7 @@ static HRESULT STDMETHODCALLTYPE d3d12_device_CheckFeatureSupport(d3d12_device_i
                 }
             }
 
+            /* TODO: Also check dedicated allocation requirements? */
             data->Supported = (memory_requirements.memoryTypeBits & vkd3d_select_memory_types(device, &data->DestHeapProperties, D3D12_HEAP_FLAG_NONE)) != 0;
             return S_OK;
         }
@@ -7367,7 +7371,8 @@ static D3D12_RESOURCE_ALLOCATION_INFO* STDMETHODCALLTYPE d3d12_device_GetResourc
         if (desc->Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
         {
             resource_info.SizeInBytes = desc->Width;
-            resource_info.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+            /* TODO TIGHT ALIGNMENT */
+            resource_info.Alignment = (desc->Flags & D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT) ? 4 : D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
         }
         else
         {
@@ -7379,8 +7384,12 @@ static D3D12_RESOURCE_ALLOCATION_INFO* STDMETHODCALLTYPE d3d12_device_GetResourc
                 goto invalid;
             }
 
-            requested_alignment = desc->Alignment
-                    ? desc->Alignment : D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+            if (desc->Flags & D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT)
+                requested_alignment = 0;
+            else
+                requested_alignment = desc->Alignment
+                        ? desc->Alignment : D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+
             resource_info.Alignment = max(resource_info.Alignment, requested_alignment);
         }
 
