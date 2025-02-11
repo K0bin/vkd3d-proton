@@ -588,7 +588,7 @@ static void vkd3d_memory_transfer_queue_wait_allocation(struct vkd3d_memory_tran
     vkd3d_memory_transfer_queue_wait_semaphore(queue, wait_value, UINT64_MAX);
 }
 
-static uint32_t vkd3d_select_memory_types(struct d3d12_device *device, const D3D12_HEAP_PROPERTIES *heap_properties, D3D12_HEAP_FLAGS heap_flags)
+uint32_t vkd3d_select_memory_types(struct d3d12_device *device, const D3D12_HEAP_PROPERTIES *heap_properties, D3D12_HEAP_FLAGS heap_flags)
 {
     const VkPhysicalDeviceMemoryProperties *memory_info = &device->memory_properties;
     uint32_t type_mask = (1 << memory_info->memoryTypeCount) - 1;

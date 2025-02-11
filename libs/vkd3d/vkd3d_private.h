@@ -1168,6 +1168,13 @@ HRESULT vkd3d_get_image_allocation_info(struct d3d12_device *device,
         const D3D12_RESOURCE_DESC1 *desc,
         UINT num_castable_formats, const DXGI_FORMAT *castable_formats,
         D3D12_RESOURCE_ALLOCATION_INFO *allocation_info);
+HRESULT vkd3d_create_image(struct d3d12_device *device,
+        const D3D12_HEAP_PROPERTIES *heap_properties, D3D12_HEAP_FLAGS heap_flags,
+        const D3D12_RESOURCE_DESC1 *desc, struct d3d12_resource *resource,
+        UINT num_castable_formats, const DXGI_FORMAT *castable_formats,
+        VkImage *vk_image);
+
+uint32_t vkd3d_select_memory_types(struct d3d12_device *device, const D3D12_HEAP_PROPERTIES *heap_properties, D3D12_HEAP_FLAGS heap_flags);
 
 enum vkd3d_view_type
 {

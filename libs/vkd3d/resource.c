@@ -965,7 +965,7 @@ static HRESULT vkd3d_get_image_create_info(struct d3d12_device *device,
     return S_OK;
 }
 
-static HRESULT vkd3d_create_image(struct d3d12_device *device,
+HRESULT vkd3d_create_image(struct d3d12_device *device,
         const D3D12_HEAP_PROPERTIES *heap_properties, D3D12_HEAP_FLAGS heap_flags,
         const D3D12_RESOURCE_DESC1 *desc, struct d3d12_resource *resource,
         UINT num_castable_formats, const DXGI_FORMAT *castable_formats,

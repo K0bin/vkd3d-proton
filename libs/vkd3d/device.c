@@ -4293,6 +4293,7 @@ static HRESULT STDMETHODCALLTYPE d3d12_device_CheckFeatureSupport(d3d12_device_i
         D3D12_FEATURE feature, void *feature_data, UINT feature_data_size)
 {
     struct d3d12_device *device = impl_from_ID3D12Device(iface);
+    const struct vkd3d_vk_device_procs *vk_procs = &device->vk_procs;
 
     TRACE("iface %p, feature %#x, feature_data %p, feature_data_size %u.\n",
             iface, feature, feature_data, feature_data_size);
@@ -5106,10 +5107,81 @@ static HRESULT STDMETHODCALLTYPE d3d12_device_CheckFeatureSupport(d3d12_device_i
             return S_OK;
         }
 
+        case D3D12_FEATURE_HARDWARE_COPY:
+        {
+            D3D12_FEATURE_DATA_HARDWARE_COPY *data = feature_data;
+            data->Supported = FALSE; /* TODO? */
+            return S_OK;
+        }
+
         case D3D12_FEATURE_APPLICATION_SPECIFIC_DRIVER_STATE:
         {
             D3D12_FEATURE_DATA_APPLICATION_SPECIFIC_DRIVER_STATE *data = feature_data;
             data->Supported = FALSE;
+            return S_OK;
+        }
+
+        case D3D12_FEATURE_PLACED_RESOURCE_SUPPORT_INFO:
+        {
+            D3D12_FEATURE_DATA_PLACED_RESOURCE_SUPPORT_INFO *data = feature_data;
+
+            VkBuffer vk_buffer = VK_NULL_HANDLE;
+            VkImage vk_image = VK_NULL_HANDLE;
+            VkMemoryRequirements memory_requirements;
+            D3D12_RESOURCE_DESC1 desc;
+            desc.Dimension = data->Dimension;
+            desc.Height = 1;
+            desc.DepthOrArraySize = 1;
+            desc.MipLevels = 1;
+            desc.Alignment = 0;
+            desc.SampleDesc.Count = 1;
+            desc.SampleDesc.Quality = 0;
+            desc.Flags = 0;
+
+            if (data->Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
+            {
+                desc.Format = DXGI_FORMAT_UNKNOWN;
+                desc.Width = 256;
+                desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+                if (SUCCEEDED(vkd3d_create_buffer(device, &data->DestHeapProperties,
+                    D3D12_HEAP_FLAG_NONE, &desc,
+                    NULL, &vk_buffer)))
+                {
+                    VK_CALL(vkGetBufferMemoryRequirements(device->vk_device, vk_buffer, &memory_requirements));
+                    VK_CALL(vkDestroyBuffer(device->vk_device, vk_buffer, NULL));
+                }
+            }
+            else
+            {
+                desc.Width = 16;
+                desc.Format = data->Format;
+                desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+                switch (data->Dimension)
+                {
+                    case D3D12_RESOURCE_DIMENSION_TEXTURE2D:
+                        desc.Height = 16;
+                        break;
+                    case D3D12_RESOURCE_DIMENSION_TEXTURE3D:
+                        desc.Height = 16;
+                        desc.DepthOrArraySize = 16;
+                        break;
+                }
+                if (SUCCEEDED(vkd3d_create_image(device, &data->DestHeapProperties,
+                    D3D12_HEAP_FLAG_NONE, &desc, NULL, 0, NULL, &vk_image)))
+                {
+                    VK_CALL(vkGetImageMemoryRequirements(device->vk_device, vk_image, &memory_requirements));
+                    VK_CALL(vkDestroyImage(device->vk_device, vk_image, NULL));
+                }
+            }
+
+            data->Supported = (memory_requirements.memoryTypeBits & vkd3d_select_memory_types(device, &data->DestHeapProperties, D3D12_HEAP_FLAG_NONE)) != 0;
+            return S_OK;
+        }
+
+        case D3D12_FEATURE_D3D12_TIGHT_ALIGNMENT:
+        {
+            D3D12_FEATURE_DATA_TIGHT_ALIGNMENT *data = feature_data;
+            data->SupportTier = D3D12_TIGHT_ALIGNMENT_TIER_1;
             return S_OK;
         }
 
