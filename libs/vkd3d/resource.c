@@ -5460,9 +5460,9 @@ static bool vkd3d_buffer_view_get_aligned_view(
              * When using typed buffers, the offset buffer is in format of u32
              * (element offset, element size). */
             first_element = (first_element * structured_stride) / sizeof(uint32_t);
-            num_elements = (num_elements * structured_stride) / sizeof(uint32_t);
+            num_elements = ((num_elements * structured_stride) + 3) / sizeof(uint32_t);
             structured_stride = sizeof(uint32_t);
-            max_resource_elements = resource->desc.Width / sizeof(uint32_t);
+            max_resource_elements = (resource->desc.Width + 3) / sizeof(uint32_t);
         }
 
         /* Requantizing the typed offset is shaky business if we overflow max_elements when doing so.
